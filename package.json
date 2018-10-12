@@ -1,0 +1,24 @@
+{
+  "name": "btc-grabber",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "author": "wardencliffe",
+  "license": "MIT",
+  "scripts": {
+    "docker:build": "docker build -t btc-grabber .",
+    "docker:run": "docker run --rm --name=btc-grabber-1 btc-grabber",
+    "build": "tsc",
+    "start": "ts-node src/index.ts"
+  },
+  "dependencies": {
+    "@types/axios": "^0.14.0",
+    "@types/bluebird": "^3.5.24",
+    "@types/node": "^10.5.2",
+    "@types/rethinkdb": "ChrisTalman/rethinkdb",
+    "axios": "^0.18.0",
+    "dotenv": "^6.0.0",
+    "rethinkdb": "^2.3.3",
+    "ts-node": "^7.0.0",
+    "typescript": "^3.0.3"
+  }
+}
