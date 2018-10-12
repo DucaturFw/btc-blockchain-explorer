@@ -13,11 +13,68 @@ console.assert(TABLE_TXS, "please provide $BTC_EXPLORER_TABLE_TXS!")
 
 console.log(`btc node: ${BTC_NODE}\ndb name: ${DB_NAME}\nblocks table: ${TABLE_BLOCKS}\ntxs table: ${TABLE_TXS}\nrethink: ${RETHINK_URI}`)
 
+interface IBlock {
+	hash: string;
+	confirmations: number;
+	strippedsize: number;
+	size: number;
+	weight: number;
+	height: number;
+	version: number;
+	versionHex: string;
+	merkleroot: string;
+	tx: Array<string>;
+	time: number;
+	mediantime: number;
+	nonce: number;
+	bits: string;
+	difficulty: number;
+	chainwork: string;
+	nTx: number;
+	previousblockhash: string;
+	nextblockhash: string;
+}
+
+interface ITransactionScriptPubKey {
+	asm: string;
+	hex: string;
+	reqSigs: number;
+	type: string;
+	addresses: Array<string>;
+}
+
+interface ITransactionInput {
+	coinbase: string;
+	sequence: number;
+}
+
+interface ITransactionOutput {
+	value: number;
+	n: number;
+	scriptPubKey: ITransactionScriptPubKey;
+}
+
+interface ITransaction {
+	txid: string;
+	hash: string;
+	version: number;
+	size: number;
+	vsize: number;
+	locktime: number;
+	vin: Array<ITransactionInput>;
+	vout: Array<ITransactionOutput>;
+	hex: string;
+	blockhash: string;
+	confirmations: number;
+	time: number;
+	blocktime: number;
+}
+
 import axios from "axios"
 import r from "rethinkdb"
 
 let api = <T>(method: string, params: any = []) => axios
-	.post(BTC_NODE, { jsonrpc: "2.0", id: 1, method, params })
+	.post(BTC_NODE, { jsonrpc: "1.0", id: 1, method, params })
 	.then(res => res.data)
 	.then(data => { if (data.error) throw data.error; else return data.result as T })
 
@@ -71,25 +128,26 @@ const delay = (time: number) => new Promise(resolve => setTimeout(resolve, time)
 
 		const BATCH_SIZE = blockHeight - lastBlock
 		
-		for (let i = 100000; i < BATCH_SIZE; i++)
+		for (let i = 0; i < BATCH_SIZE; i++)
 		{
 			let idx = lastBlock + 1 + i
 			if (idx == blockHeight)
 				return delay(3000)
 				
 			const blockHash = await api<string>("getblockhash", [idx])
-			const block = await api<any>("getblock", [blockHash])
-			// console.log(block)
+			//console.log(blockHash)
+			const block = await api<IBlock>("getblock", [blockHash])
+			//console.log(block)
 			await db.table(TABLE_BLOCKS).insert(block).run(conn)
 
-			const txids = <Array<string>>block['tx']
+			const txids = block['tx']
 			for (let j = 0; j < txids.length; ++j) {
 				try {
-					const tx = await api<any>("getrawtransaction", [txids[j], 1])
-					// console.log(tx)
+					const tx = await api<ITransaction>("getrawtransaction", [txids[j], true])
+					//console.log(tx)
 					await db.table(TABLE_TXS).insert(tx).run(conn)
 				} catch (error) {
-					console.log(error)
+					//console.error(error)
 				}
 			}
 		}
